@@ -5,6 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.media.MediaMetadataRetriever;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -29,6 +32,8 @@ import com.example.classicmusic.utils.Constants;
 import com.example.classicmusic.utils.MyApplication;
 import com.example.classicmusic.utils.StorageUtil;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class AudioPlayActivity extends AppCompatActivity implements View.OnClickListener, AudioServiceCallback {
@@ -39,9 +44,9 @@ public class AudioPlayActivity extends AppCompatActivity implements View.OnClick
     private Button btnNext, btnPrevious, btnPlay;
     private TextView txAudioName, txAudioInfo, seekBarHint;
     private SeekBar audioProgress;
-private ImageView audioCover;
+    private ImageView audioCover;
     //*List of available Audio files*//
-    private ArrayList<AudioData> audioList;
+    private ArrayList<AudioData> audioList = new ArrayList<>();
     private AudioData activeAudio;
 
     private StorageUtil storage;
@@ -49,9 +54,11 @@ private ImageView audioCover;
 
     private int audioIndex = -1;
     boolean serviceBound = false;
+    private int resumePosition = 0;
 
     private Handler mSeekbarUpdateHandler = new Handler();
-
+    private MediaPlayer intentMediaPlayer;
+    private boolean ifFromIntent;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -61,8 +68,42 @@ private ImageView audioCover;
         init();
     }
 
+    private boolean isHandleIncomingIntentRequest() {
+        // Get the intent that started this activity
+        Intent intent = getIntent();
+        Uri data = intent.getData();
+
+        // Figure out what to do based on the intent type
+        if (intent != null && intent.getType() != null && intent.getType().indexOf("audio/*") != -1) {
+            btnPrevious.setEnabled(false);
+            btnNext.setEnabled(false);
+            btnNext.setClickable(false);
+            Log.e("Apps:", ".mp3" + " " + data);
+            // Handle intents with image data ...
+            writeAudioDate(data);
+            intentMediaPlayer = new MediaPlayer();
+            try {
+                // mediaPlayer.setDataSource(String.valueOf(myUri));
+                intentMediaPlayer.setDataSource(AudioPlayActivity.this, data);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                intentMediaPlayer.prepare();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            intentMediaPlayer.start();
+            updateAudio();
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
     private void init() {
-        audioCover=findViewById(R.id.audio_cover);
+        audioCover = findViewById(R.id.audio_cover);
         txAudioName = findViewById(R.id.audio_name);
         txAudioInfo = findViewById(R.id.audio_info);
         btnNext = findViewById(R.id.btn_next);
@@ -77,8 +118,8 @@ private ImageView audioCover;
 
         //Load data from SharedPreferences
         storage = new StorageUtil(getApplicationContext());
-        audioList = storage.loadAudio();
-        audioIndex = storage.loadAudioIndex();
+        // audioList = storage.loadAudio();
+        //audioIndex = storage.loadAudioIndex();
 
         audioProgress.setOnSeekBarChangeListener(new SeekBarListener());
         ActionBar actionBar = getSupportActionBar();
@@ -86,25 +127,30 @@ private ImageView audioCover;
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setDisplayShowHomeEnabled(true);
 
-        //*Start playing the Audio here*//
-        playAudio(audioIndex);
+        ifFromIntent = isHandleIncomingIntentRequest();
 
-        /* Update the view here*/
-        updateAudio();
+        if (!ifFromIntent) {
+            audioList = storage.loadAudio();
+            audioIndex = storage.loadAudioIndex();
+            //*Start playing the Audio here*//
+            playAudio(audioIndex);
 
+            /* Update the view here*/
+            updateAudio();
+        }
     }
 
     public void updateAudio() {
-        audioList = storage.loadAudio();
-        audioIndex = storage.loadAudioIndex();
-        activeAudio = audioList.get(audioIndex);
-        txAudioName.setText(activeAudio.getTitle());
-        txAudioInfo.setText(activeAudio.getAlbum() + " " + activeAudio.getArtist());
+        Log.e("Index", audioIndex + " : audioIndex");
+        if (audioIndex != -1) {
+            activeAudio = audioList.get(audioIndex);
+            txAudioName.setText(activeAudio.getTitle());
+            txAudioInfo.setText(activeAudio.getAlbum() + " " + activeAudio.getArtist());
 
-        Bitmap coverImage=storage.getAudioCoverImage(activeAudio.getData());
-        if(coverImage!=null)
-        {
-            audioCover.setImageBitmap(coverImage);
+            Bitmap coverImage = storage.getAudioCoverImage(activeAudio.getData());
+            if (coverImage != null) {
+                audioCover.setImageBitmap(coverImage);
+            }
         }
     }
 
@@ -127,6 +173,7 @@ private ImageView audioCover;
         }
 
     }
+
     private Runnable mUpdateSeekbar = new Runnable() {
         @Override
         public void run() {
@@ -142,6 +189,64 @@ private ImageView audioCover;
             }
         }
     };
+
+    private void writeAudioDate(Uri uri) {
+        String path = null;
+        try {
+            path = new File(uri.getPath()).getCanonicalPath();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        MediaMetadataRetriever metaRetriver = new MediaMetadataRetriever();
+        metaRetriver.setDataSource(path);
+        String title = null, album, artist, duration;
+        try {
+
+            title = metaRetriver
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+            Log.e("Index", "Title: " + title);
+            album = metaRetriver
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM);
+            artist = metaRetriver
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+            duration = metaRetriver
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+        } catch (Exception e) {
+
+            album = "Unknown Album";
+            artist = "Unknown Artist";
+            duration = "Unknown Genre";
+        }
+
+        String song_duration = "";
+        if (String.valueOf(duration) != null) {
+            try {
+                Long time = Long.valueOf(duration);
+                long seconds = time / 1000;
+                long minutes = seconds / 60;
+                seconds = seconds % 60;
+
+                if (seconds < 10) {
+                    song_duration = String.valueOf(minutes) + ":0" + String.valueOf(seconds);
+
+                } else {
+                    song_duration = String.valueOf(minutes) + ":" + String.valueOf(seconds);
+                    //song.put("songDuration", ccsongs_duration);
+                }
+            } catch (NumberFormatException e) {
+                song_duration = duration;
+            }
+        } else {
+            song_duration = "0";
+
+        }
+        // Save to audioList
+        audioList.add(new AudioData("", title, album, artist, song_duration));
+        Log.e("Index", audioList.size() + "");
+        audioIndex = 0;
+
+    }
+
     //Binding this Client to the AudioPlayer Service
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -163,6 +268,7 @@ private ImageView audioCover;
             serviceBound = false;
         }
     };
+
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putBoolean("ServiceState", serviceBound);
@@ -198,28 +304,42 @@ private ImageView audioCover;
                 break;
 
             case R.id.button_pause: /* Play/Pause the Audio clicked*/
-                if (player.mediaPlayer != null) {
-                    if (player.mediaPlayer.isPlaying()) {
-                        player.pauseMedia();
-                        player.buildNotification(MediaPlayerService.PlaybackStatus.PAUSED);
-                        mSeekbarUpdateHandler.removeCallbacks(mUpdateSeekbar);
-                    } else {
-                        mSeekbarUpdateHandler.postDelayed(mUpdateSeekbar, 0);
-                        player.resumeMedia();
-                        player.buildNotification(MediaPlayerService.PlaybackStatus.PLAYING);
+                if (player != null) {
+                    if (player.mediaPlayer != null) {
+                        if (player.mediaPlayer.isPlaying()) {
+                            player.pauseMedia();
+                            player.buildNotification(MediaPlayerService.PlaybackStatus.PAUSED);
+                            mSeekbarUpdateHandler.removeCallbacks(mUpdateSeekbar);
+                        } else {
+                            mSeekbarUpdateHandler.postDelayed(mUpdateSeekbar, 0);
+                            player.resumeMedia();
+                            player.buildNotification(MediaPlayerService.PlaybackStatus.PLAYING);
+                        }
                     }
-                }
+                } else {
 
+                    if (intentMediaPlayer.isPlaying()) { btnPlay.setBackgroundResource(R.drawable.ic_play);
+                        resumePosition = intentMediaPlayer.getCurrentPosition();
+                        intentMediaPlayer.pause();
+                        mSeekbarUpdateHandler.removeCallbacks(mUpdateSeekbar);
+                    } else { btnPlay.setBackgroundResource(R.drawable.ic_pause);
+                        mSeekbarUpdateHandler.postDelayed(mUpdateSeekbar, 0);
+                        intentMediaPlayer.seekTo(resumePosition);
+                        intentMediaPlayer.start();
+
+                    }
+
+                }
                 updateAudio();
                 break;
 
             case R.id.btn_previous: /* Play Previous Audio clicked*/
 
-                mSeekbarUpdateHandler.postDelayed(mUpdateSeekbar, 0);
                 player.skipToPrevious();
                 player.updateMetaData();
                 player.buildNotification(MediaPlayerService.PlaybackStatus.PLAYING);
                 btnPlay.setBackgroundResource(R.drawable.ic_pause);
+                mSeekbarUpdateHandler.postDelayed(mUpdateSeekbar, 0);
                 updateAudio();
 
                 break;

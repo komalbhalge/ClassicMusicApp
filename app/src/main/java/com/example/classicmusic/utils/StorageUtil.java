@@ -66,13 +66,15 @@ public class StorageUtil {
     }
 
     public Bitmap getAudioCoverImage(String audioPath) {
+        if (!audioPath.isEmpty()) {
 
-        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-        mmr.setDataSource(audioPath);
-        byte[] artBytes = mmr.getEmbeddedPicture();
-        if (artBytes != null) {
-            InputStream is = new ByteArrayInputStream(mmr.getEmbeddedPicture());
-            return BitmapFactory.decodeStream(is);
+            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+            mmr.setDataSource(audioPath);
+            byte[] artBytes = mmr.getEmbeddedPicture();
+            if (artBytes != null) {
+                InputStream is = new ByteArrayInputStream(mmr.getEmbeddedPicture());
+                return BitmapFactory.decodeStream(is);
+            }
         }
         return null;
     }

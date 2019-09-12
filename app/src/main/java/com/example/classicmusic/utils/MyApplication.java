@@ -3,6 +3,11 @@ package com.example.classicmusic.utils;
 import android.app.Application;
 
 public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+    }
 
     private static boolean activityVisible;
 

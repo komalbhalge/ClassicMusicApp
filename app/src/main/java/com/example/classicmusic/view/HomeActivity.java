@@ -77,6 +77,7 @@ public class HomeActivity extends AppCompatActivity {
         // Requesting run time permission for Read External Storage.
         AndroidRuntimePermission();
 
+
     }
 
     private void setAdapter() {
@@ -135,6 +136,7 @@ public class HomeActivity extends AppCompatActivity {
                 if (cursor != null && cursor.getCount() > 0) {
                     audioList = new ArrayList<>();
                     while (cursor.moveToNext()) {
+
                         String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
                         String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
                         String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));

@@ -24,7 +24,42 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".view.AudioPlayActivity" />
+        <activity android:name=".view.AudioPlayActivity">
+
+            <intent-filter
+                android:scheme="http"
+                tools:ignore="AppLinkUrlError">
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+                <action android:name="android.intent.action.VIEW" />
+            </intent-filter>
+
+            <intent-filter tools:ignore="AppLinkUrlError">
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:mimeType="audio/*"
+                    android:scheme="http" />
+                <data
+                    android:mimeType="audio/*"
+                    android:scheme="https" />
+                <data
+                    android:mimeType="audio/*"
+                    android:scheme="file" />
+
+                <action android:name="android.intent.action.VIEW" />
+            </intent-filter>
+
+            <intent-filter tools:ignore="AppLinkUrlError">
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:host="*"
+                    android:pathPattern=".*\\.mp3"
+                    android:scheme="http" />
+                <action android:name="android.intent.action.VIEW" />
+            </intent-filter>
+
+        </activity>
 
         <service android:name=".background.MediaPlayerService" />
     </application>
