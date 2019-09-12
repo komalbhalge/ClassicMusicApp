@@ -2,6 +2,7 @@
 **Short Description:**
 
 -This is a simple demo app for playing audio files from the device/phone.
+
 -For this demo I have used [MediaPlayer](https://developer.android.com/reference/android/media/MediaPlayer.html)
 
 **Features:**
