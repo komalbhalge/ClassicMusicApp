@@ -11,7 +11,7 @@
 2. Play audios in background even if app is not in foreground, for this, I have used [NotificationChannel](https://developer.android.com/reference/android/app/NotificationChannel)
 3. Notification displayed is interactive.
 4. You can Play/Pause, Skip to Next/Previous from notification itself. 
-5. Audio information /metadata can shown in Audio Play Screen as well as in Notifications.
+5. Audio information/metadata is shown in Audio Play Screen as well as in Notifications.
 
 **Screenshots:**
 
