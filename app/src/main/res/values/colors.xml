@@ -3,4 +3,8 @@
     <color name="colorPrimary">#C73461</color>
     <color name="colorPrimaryDark">#D81B60</color>
     <color name="colorAccent">#D81B60</color>
+
+
+    <color name="bg_bright">#CCFFFFFF</color>
+    <color name="bg_main_skyblue">#1AA1F3</color>
 </resources>

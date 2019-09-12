@@ -2,5 +2,5 @@
     <string name="app_name">ClassicMusic</string>
 
     <string name="actionbar_title">Now Playing</string>
-    <string name="no_mp3">No .mp3 found!</string>
+    <string name="no_mp3">No audio found in device.</string>
 </resources>

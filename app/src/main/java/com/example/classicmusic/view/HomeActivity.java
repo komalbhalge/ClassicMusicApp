@@ -18,7 +18,6 @@ import android.view.View;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -28,7 +27,6 @@ import com.example.classicmusic.R;
 import com.example.classicmusic.adapter.AudioAdapter;
 import com.example.classicmusic.background.MediaPlayerService;
 import com.example.classicmusic.module.AudioData;
-import com.example.classicmusic.module.AudioViewModel;
 import com.example.classicmusic.utils.Constants;
 import com.example.classicmusic.utils.MyApplication;
 import com.example.classicmusic.utils.StorageUtil;
@@ -42,32 +40,41 @@ import com.karumi.dexter.listener.single.PermissionListener;
 import java.util.ArrayList;
 
 public class HomeActivity extends AppCompatActivity {
-    private boolean serviceBound = false;
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.example.classicmusic.view.PlayNewAudio";
+    private boolean serviceBound = false;
     private RecyclerView recyclerView;
     private AudioAdapter adapter;
     private ArrayList<AudioData> audioList;
     private AsyncQueryHandler mAsyncQueryHandler;
     private TextView txNoAudioFound;
-    private MediaPlayerService mediaPlayerService;
-    private AudioViewModel audioViewModel;
     private StorageUtil storage;
+    //Binding this Client to the AudioPlayer Service
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            serviceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+        }
+    };
+
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_main); // Requesting run time permission for Read External Storage.
-       storage = new StorageUtil(getApplicationContext());
-
-        audioViewModel = ViewModelProviders.of(this).get(AudioViewModel.class);
+        setContentView(R.layout.activity_home);
+        storage = new StorageUtil(getApplicationContext());
 
         recyclerView = (RecyclerView) findViewById(R.id.song_list);
         txNoAudioFound = findViewById(R.id.no_mp3);
 
         initAsyncLoadMusicFiles();
-
+        // Requesting run time permission for Read External Storage.
         AndroidRuntimePermission();
 
     }
@@ -116,7 +123,7 @@ public class HomeActivity extends AppCompatActivity {
 
                     recyclerView.setVisibility(View.GONE);
                     txNoAudioFound.setVisibility(View.VISIBLE);
-                    Log.e(Constants.TAG, "curson empty");
+                    Log.d(Constants.TAG, "curson empty");
                 }
                 if (cursor != null) {
                     cursor.close();
@@ -133,7 +140,7 @@ public class HomeActivity extends AppCompatActivity {
         storage.storeAudio(audioList);
         recyclerView.setVisibility(View.VISIBLE);
         txNoAudioFound.setVisibility(View.GONE);
-        adapter = new AudioAdapter(audioList, new OnItemClickListener() {
+        adapter = new AudioAdapter(this,audioList, new OnItemClickListener() {
             @Override
             public void onItemClick(AudioData item, int position) {
                 playAudioService(position);
@@ -172,33 +179,16 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-  //Binding this Client to the AudioPlayer Service
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            serviceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            serviceBound = false;
-        }
-    };
-
     private void playAudioService(int audioIndex) {
         //Check is service is active
         if (!serviceBound) {
-            audioViewModel.setAudioListData(audioList);
-            audioViewModel.setAudioData(audioList.get(audioIndex));
             //Store Serializable audioList to SharedPreferences
-           // storage.storeAudio(audioList);
             storage.storeAudioIndex(audioIndex);
             Intent playerIntent = new Intent(this, MediaPlayerService.class);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
             //Store the new audioIndex to SharedPreferences
-            //storage.storeAudio(audioList);
             storage.storeAudioIndex(audioIndex);
             //Service is active
             //Send a broadcast to the service -> PLAY_NEW_AUDIO
@@ -240,16 +230,6 @@ public class HomeActivity extends AppCompatActivity {
     public void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         serviceBound = savedInstanceState.getBoolean("ServiceState");
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (serviceBound) {
-            Log.e(Constants.TAG, "HomeActivity: onDestroy");
-            //unbindService(audioViewModel.getServiceConnection());
-
-        }
     }
 
     @Override
