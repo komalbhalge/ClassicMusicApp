@@ -41,16 +41,17 @@ import com.karumi.dexter.listener.single.PermissionListener;
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity {
     private boolean serviceBound = false;
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.example.classicmusic.view.PlayNewAudio";
     private RecyclerView recyclerView;
     private AudioAdapter adapter;
     private ArrayList<AudioData> audioList;
     private AsyncQueryHandler mAsyncQueryHandler;
-    private AudioViewModel audioViewModel;
     private TextView txNoAudioFound;
-
+    private MediaPlayerService mediaPlayerService;
+    private AudioViewModel audioViewModel;
+    private StorageUtil storage;
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,12 +59,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main); // Requesting run time permission for Read External Storage.
+       storage = new StorageUtil(getApplicationContext());
 
-        if (getIntent() != null && getIntent().getExtras() != null) {
-            if (getIntent().getExtras().getBoolean(Constants.LAUNCHED_FROM_NOTIFICATION)) {
-                startActivity(new Intent(MainActivity.this, AudioPlayActivity.class));
-            }
-        }
         audioViewModel = ViewModelProviders.of(this).get(AudioViewModel.class);
 
         recyclerView = (RecyclerView) findViewById(R.id.song_list);
@@ -133,12 +130,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setAdapter() {
+        storage.storeAudio(audioList);
         recyclerView.setVisibility(View.VISIBLE);
         txNoAudioFound.setVisibility(View.GONE);
         adapter = new AudioAdapter(audioList, new OnItemClickListener() {
             @Override
             public void onItemClick(AudioData item, int position) {
-                playAudio(position);
+                playAudioService(position);
 
             }
         });
@@ -174,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //Binding this Client to the AudioPlayer Service
+  //Binding this Client to the AudioPlayer Service
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -187,31 +185,27 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void playAudio(int audioIndex) {
+    private void playAudioService(int audioIndex) {
         //Check is service is active
         if (!serviceBound) {
             audioViewModel.setAudioListData(audioList);
             audioViewModel.setAudioData(audioList.get(audioIndex));
             //Store Serializable audioList to SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
-            storage.storeAudio(audioList);
-            Log.e(Constants.TAG, "Storing audio list: " + audioList.size());
+           // storage.storeAudio(audioList);
             storage.storeAudioIndex(audioIndex);
-
             Intent playerIntent = new Intent(this, MediaPlayerService.class);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
             //Store the new audioIndex to SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
+            //storage.storeAudio(audioList);
             storage.storeAudioIndex(audioIndex);
-
             //Service is active
             //Send a broadcast to the service -> PLAY_NEW_AUDIO
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
             sendBroadcast(broadcastIntent);
         }
-        startActivity(new Intent(MainActivity.this, AudioPlayActivity.class));
+        startActivity(new Intent(HomeActivity.this, AudioPlayActivity.class));
     }
 
     // Creating Runtime permission function.
@@ -252,8 +246,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (serviceBound) {
-            Log.e(Constants.TAG, "MainActivity: onDestroy");
-            unbindService(serviceConnection);
+            Log.e(Constants.TAG, "HomeActivity: onDestroy");
+            //unbindService(audioViewModel.getServiceConnection());
 
         }
     }

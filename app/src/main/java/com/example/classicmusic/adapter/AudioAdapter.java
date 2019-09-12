@@ -17,8 +17,6 @@ import com.example.classicmusic.utils.Constants;
 import java.util.List;
 
 public class AudioAdapter extends RecyclerView.Adapter<AudioAdapter.MyViewHolder> {
-    public static final int VIEW_TYPE_EMPTY = 0;
-    public static final int VIEW_TYPE_NORMAL = 1;
 
     List<AudioData> audioList;
     OnItemClickListener listener;

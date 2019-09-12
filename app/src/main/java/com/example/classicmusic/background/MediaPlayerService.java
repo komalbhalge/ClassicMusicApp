@@ -32,14 +32,12 @@ import com.example.classicmusic.module.AudioData;
 import com.example.classicmusic.utils.AudioServiceCallback;
 import com.example.classicmusic.utils.Constants;
 import com.example.classicmusic.utils.StorageUtil;
-import com.example.classicmusic.view.MainActivity;
+import com.example.classicmusic.view.AudioPlayActivity;
+import com.example.classicmusic.view.HomeActivity;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
-/**
- * Created by Valdio Veliu on 16-07-11.
- */
 public class MediaPlayerService extends Service implements MediaPlayer.OnCompletionListener,
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, AudioManager.OnAudioFocusChangeListener {
 
@@ -234,13 +232,22 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     @Override
     public void onCompletion(MediaPlayer mp) {
+        Log.e(Constants.TAG, "AudioIndex: "+audioIndex);
         //Invoked when playback of a media source has completed.
-        stopMedia();
+        if (mediaPlayer.isPlaying() && audioIndex < audioList.size()) {
+            skipToNext();
+        } else {
+            //Update the pause button
+            mCallBack.onAudioPausePlay(false);
+            //Stop the media
+            stopMedia();
+            //Remove Notification from the notificationbar
+            removeNotification();
+            //stop the service
+            stopSelf();
+        }
 
-        //Remove Notification from the notificationbar
-        removeNotification();
-        //stop the service
-        stopSelf();
+
     }
 
     @Override
@@ -383,8 +390,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         //Update stored index
         new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
-        new StorageUtil(getApplicationContext()).storeAudio(audioList);
-        Log.e(Constants.TAG, "skipToNext() Storing audio list: " + audioList.size());
+
         mCallBack.onAudioChange(activeAudio);
         stopMedia();
         //reset mediaPlayer
@@ -539,9 +545,9 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void buildNotification(PlaybackStatus playbackStatus) {
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        notificationIntent.putExtra(Constants.LAUNCHED_FROM_NOTIFICATION,true);
+        Intent notificationIntent = new Intent(this, AudioPlayActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        notificationIntent.putExtra(Constants.LAUNCHED_FROM_NOTIFICATION, true);
         int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
         PendingIntent play_pauseAction = null;
 
@@ -665,7 +671,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void register_playNewAudio() {
         //Register playNewMedia receiver
-        IntentFilter filter = new IntentFilter(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+        IntentFilter filter = new IntentFilter(HomeActivity.Broadcast_PLAY_NEW_AUDIO);
         registerReceiver(playNewAudio, filter);
     }
 

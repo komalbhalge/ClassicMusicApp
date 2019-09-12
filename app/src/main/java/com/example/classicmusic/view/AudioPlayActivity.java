@@ -59,8 +59,8 @@ public class AudioPlayActivity extends AppCompatActivity implements View.OnClick
 
 
     private void init() {
-        txAudioName=findViewById(R.id.audio_name);
-        txAudioInfo=findViewById(R.id.audio_info);
+        txAudioName = findViewById(R.id.audio_name);
+        txAudioInfo = findViewById(R.id.audio_info);
         btnNext = findViewById(R.id.btn_next);
         btnPlay = findViewById(R.id.button_pause);
         btnPrevious = findViewById(R.id.btn_previous);
@@ -77,71 +77,73 @@ public class AudioPlayActivity extends AppCompatActivity implements View.OnClick
         audioIndex = storage.loadAudioIndex();
 
         audioProgress.setOnSeekBarChangeListener(new SeekBarListener());
-        ActionBar actionBar=getSupportActionBar();
-actionBar.setTitle(getResources().getString(R.string.actionbar_title));
-actionBar.setDisplayHomeAsUpEnabled(true);
-actionBar.setDisplayShowHomeEnabled(true);
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setTitle(getResources().getString(R.string.actionbar_title));
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setDisplayShowHomeEnabled(true);
 
         playAudio(audioIndex);
         updateAudio();
         //performAudioActions(PlaybackStatus.PLAYING);
 
     }
-private class SeekBarListener implements SeekBar.OnSeekBarChangeListener{
-    @Override
-    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
 
-        int x = (int) Math.ceil(progress / 1000f);
+    private class SeekBarListener implements SeekBar.OnSeekBarChangeListener {
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
 
-        long minutes = x / 60;
-        long seconds = x % 60;
+            int x = (int) Math.ceil(progress / 1000f);
 
-        if (seconds < 10)
-            seekBarHint.setText(String.valueOf(minutes) + ":0" + String.valueOf(seconds));
-        else
-            seekBarHint.setText(String.valueOf(minutes) + ":" + String.valueOf(seconds));
+            long minutes = x / 60;
+            long seconds = x % 60;
 
-        double percent = progress / (double) seekBar.getMax();
-        int offset = seekBar.getThumbOffset();
-        int seekWidth = seekBar.getWidth();
-        int val = (int) Math.round(percent * (seekWidth - 2 * offset));
-        int labelWidth = seekBarHint.getWidth();
-        seekBarHint.setX(offset + seekBar.getX() + val
-                - Math.round(percent * offset)
-                - Math.round(percent * labelWidth / 2));
+            if (seconds < 10)
+                seekBarHint.setText(String.valueOf(minutes) + ":0" + String.valueOf(seconds));
+            else
+                seekBarHint.setText(String.valueOf(minutes) + ":" + String.valueOf(seconds));
 
-        if (player!=null&&progress > 0 && player.mediaPlayer != null && !player.mediaPlayer.isPlaying()) {
-            //clearMediaPlayer();
-            AudioPlayActivity.this.audioProgress.setProgress(0);
+            double percent = progress / (double) seekBar.getMax();
+            int offset = seekBar.getThumbOffset();
+            int seekWidth = seekBar.getWidth();
+            int val = (int) Math.round(percent * (seekWidth - 2 * offset));
+            int labelWidth = seekBarHint.getWidth();
+            seekBarHint.setX(offset + seekBar.getX() + val
+                    - Math.round(percent * offset)
+                    - Math.round(percent * labelWidth / 2));
+
+            if (player != null && progress > 0 && player.mediaPlayer != null && !player.mediaPlayer.isPlaying()) {
+                //clearMediaPlayer();
+                AudioPlayActivity.this.audioProgress.setProgress(0);
+            }
+
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+
+            if (player.mediaPlayer != null && player.mediaPlayer.isPlaying()) {
+                player.mediaPlayer.seekTo(seekBar.getProgress());
+            }
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+            seekBarHint.setVisibility(View.VISIBLE);
+            if (player.mediaPlayer != null) {
+                player.mediaPlayer.seekTo(seekBar.getProgress());
+            }
         }
 
     }
 
-    @Override
-    public void onStopTrackingTouch(SeekBar seekBar) {
-
-        if (player.mediaPlayer != null && player.mediaPlayer.isPlaying()) {
-            player.mediaPlayer.seekTo(seekBar.getProgress());
-        }
-    }
-
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {
-        seekBarHint.setVisibility(View.VISIBLE);
-        if (player.mediaPlayer != null ) {
-            player.mediaPlayer.seekTo(seekBar.getProgress());
-        }
-    }
-
-}
     public void updateAudio() {
 
         Log.e(Constants.TAG, "updateAudio()");
         audioList = storage.loadAudio();
         audioIndex = storage.loadAudioIndex();
-        activeAudio=audioList.get(audioIndex);
+        activeAudio = audioList.get(audioIndex);
         txAudioName.setText(activeAudio.getTitle());
-        txAudioInfo.setText(activeAudio.getAlbum()+ " "+activeAudio.getArtist());
+        txAudioInfo.setText(activeAudio.getAlbum() + " " + activeAudio.getArtist());
 
     }
 
@@ -166,17 +168,20 @@ private class SeekBarListener implements SeekBar.OnSeekBarChangeListener{
             serviceBound = false;
         }
     };
+
     private Handler mSeekbarUpdateHandler = new Handler();
     private Runnable mUpdateSeekbar = new Runnable() {
         @Override
         public void run() {
-            //if (player.mediaPlayer.isPlaying()) {
-                audioProgress.setProgress(player.mediaPlayer.getCurrentPosition());
-                mSeekbarUpdateHandler.postDelayed(this, 50);
+            if (player!=null&&player.mediaPlayer.isPlaying()){
+                if(player.mediaPlayer.getCurrentPosition()>=player.mediaPlayer.getDuration()) {
+                    mSeekbarUpdateHandler.removeCallbacks(this);
+                }else {
+                    audioProgress.setProgress(player.mediaPlayer.getCurrentPosition());
+                    mSeekbarUpdateHandler.postDelayed(this, 50);
+                }
 
-            /*}else {
-                audioProgress.setProgress(0);
-            }*/
+            }
         }
     };
 
@@ -186,19 +191,14 @@ private class SeekBarListener implements SeekBar.OnSeekBarChangeListener{
             audioViewModel.setAudioListData(audioList);
             audioViewModel.setAudioData(audioList.get(audioIndex));
             //Store Serializable audioList to SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
-            storage.storeAudio(audioList);
-            Log.e(Constants.TAG, "Storing audio list: " + audioList.size());
-            storage.storeAudioIndex(audioIndex);
 
+            storage.storeAudioIndex(audioIndex);
             Intent playerIntent = new Intent(this, MediaPlayerService.class);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
             //Store the new audioIndex to SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
             storage.storeAudioIndex(audioIndex);
-
             //Service is active
             //Send a broadcast to the service -> PLAY_NEW_AUDIO
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
@@ -223,7 +223,7 @@ private class SeekBarListener implements SeekBar.OnSeekBarChangeListener{
     protected void onDestroy() {
         super.onDestroy();
         if (serviceBound) {
-            Log.e(Constants.TAG,"AudioPlayActivity: onDestroy");
+            Log.e(Constants.TAG, "AudioPlayActivity: onDestroy");
             unbindService(serviceConnection);
             //service is active
             //player.stopSelf();
@@ -318,6 +318,7 @@ private class SeekBarListener implements SeekBar.OnSeekBarChangeListener{
             btnPlay.setBackgroundResource(R.drawable.ic_play);
         }
     }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -332,7 +333,7 @@ private class SeekBarListener implements SeekBar.OnSeekBarChangeListener{
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId()==android.R.id.home){
+        if (item.getItemId() == android.R.id.home) {
             onBackPressed();
         }
         return super.onOptionsItemSelected(item);
