@@ -15,8 +15,6 @@
 
 **Screenshots:**
 
-![Uploading Screenshot_20190912-150644.jpg…]()
-
-![Uploading Screenshot_20190912-150719.jpg…]()
-
-![Uploading Screenshot_20190912-150707.jpg…]()
+![HomeScreen](https://user-images.githubusercontent.com/25296186/64763755-42c9fd80-d573-11e9-9bf9-6d1e29f232a4.jpg)
+![PlayScreen](https://user-images.githubusercontent.com/25296186/64763776-4a89a200-d573-11e9-9434-b575f8265553.jpg)
+![Notification](https://user-images.githubusercontent.com/25296186/64763787-4eb5bf80-d573-11e9-8dc9-d412a3fc8bab.jpg)
