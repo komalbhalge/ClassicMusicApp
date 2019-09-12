@@ -9,8 +9,8 @@
 
 
     <ImageView
-        android:id="@+id/audio_detail"
-        android:layout_width="wrap_content"
+        android:id="@+id/audio_cover"
+        android:layout_width="match_parent"
         android:layout_height="0px"
         android:layout_gravity="center_horizontal"
         android:layout_weight="3"

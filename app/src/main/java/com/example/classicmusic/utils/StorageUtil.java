@@ -2,11 +2,16 @@ package com.example.classicmusic.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.MediaMetadataRetriever;
 
 import com.example.classicmusic.module.AudioData;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 
@@ -58,5 +63,17 @@ public class StorageUtil {
         SharedPreferences.Editor editor = preferences.edit();
         editor.clear();
         editor.commit();
+    }
+
+    public Bitmap getAudioCoverImage(String audioPath) {
+
+        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+        mmr.setDataSource(audioPath);
+        byte[] artBytes = mmr.getEmbeddedPicture();
+        if (artBytes != null) {
+            InputStream is = new ByteArrayInputStream(mmr.getEmbeddedPicture());
+            return BitmapFactory.decodeStream(is);
+        }
+        return null;
     }
 }

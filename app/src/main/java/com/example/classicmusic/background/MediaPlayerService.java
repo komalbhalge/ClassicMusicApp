@@ -552,8 +552,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             play_pauseAction = playbackAction(0);
         }
 
-        Bitmap largeIcon = BitmapFactory.decodeResource(getResources(),
-                R.drawable.ic_launcher); //replace with your own image
+
+        Bitmap largeIcon  = new StorageUtil(getApplicationContext()).getAudioCoverImage(activeAudio.getData());
+        if (largeIcon == null) {
+            largeIcon = BitmapFactory.decodeResource(getResources(),
+                    R.drawable.ic_launcher);
+
+        }
 
         // notificationManager.notify(1, notification);
         // Create a new Notification

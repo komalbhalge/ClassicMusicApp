@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -11,6 +12,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -37,7 +39,7 @@ public class AudioPlayActivity extends AppCompatActivity implements View.OnClick
     private Button btnNext, btnPrevious, btnPlay;
     private TextView txAudioName, txAudioInfo, seekBarHint;
     private SeekBar audioProgress;
-
+private ImageView audioCover;
     //*List of available Audio files*//
     private ArrayList<AudioData> audioList;
     private AudioData activeAudio;
@@ -60,6 +62,7 @@ public class AudioPlayActivity extends AppCompatActivity implements View.OnClick
     }
 
     private void init() {
+        audioCover=findViewById(R.id.audio_cover);
         txAudioName = findViewById(R.id.audio_name);
         txAudioInfo = findViewById(R.id.audio_info);
         btnNext = findViewById(R.id.btn_next);
@@ -97,6 +100,12 @@ public class AudioPlayActivity extends AppCompatActivity implements View.OnClick
         activeAudio = audioList.get(audioIndex);
         txAudioName.setText(activeAudio.getTitle());
         txAudioInfo.setText(activeAudio.getAlbum() + " " + activeAudio.getArtist());
+
+        Bitmap coverImage=storage.getAudioCoverImage(activeAudio.getData());
+        if(coverImage!=null)
+        {
+            audioCover.setImageBitmap(coverImage);
+        }
     }
 
     private void playAudio(int audioIndex) {

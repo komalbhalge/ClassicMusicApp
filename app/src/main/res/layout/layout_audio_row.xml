@@ -7,10 +7,11 @@
     android:layout_height="wrap_content"
     android:layout_gravity="center_vertical"
     app:cardUseCompatPadding="true"
-    android:layout_marginTop="8dp"
-    card_view:cardElevation="6dp"
-    app:cardElevation="6dp"
-    card_view:cardPreventCornerOverlap="false">
+    android:layout_marginTop="10dp"
+    app:cardCornerRadius="25dp"
+    app:cardElevation="0dp"
+    card_view:cardElevation="0dp"
+    card_view:cardPreventCornerOverlap="true">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -20,7 +21,7 @@
         android:padding="10dp">
 
         <ImageView
-            android:id="@+id/cardview_image"
+            android:id="@+id/audio_cover"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_alignParentTop="true"
@@ -32,7 +33,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:layout_toRightOf="@+id/cardview_image"
+            android:layout_toRightOf="@+id/audio_cover"
             android:paddingBottom="5dp"
             android:singleLine="true"
             android:text="Viral Android"
@@ -43,7 +44,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@+id/cardview_list_title"
-            android:layout_toRightOf="@+id/cardview_image"
+            android:layout_toRightOf="@+id/audio_cover"
             android:orientation="horizontal">
 
             <TextView

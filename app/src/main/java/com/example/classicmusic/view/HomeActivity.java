@@ -79,6 +79,54 @@ public class HomeActivity extends AppCompatActivity {
 
     }
 
+    private void setAdapter() {
+
+        storage.storeAudio(audioList);
+        recyclerView.setVisibility(View.VISIBLE);
+        txNoAudioFound.setVisibility(View.GONE);
+        adapter = new AudioAdapter(this,audioList, new OnItemClickListener() {
+            @Override
+            public void onItemClick(AudioData item, int position) {
+                playAudioService(position);
+
+            }
+        });
+
+        RecyclerView.LayoutManager manager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(manager);
+        recyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
+        recyclerView.setAdapter(adapter);
+
+
+    }
+
+    private void loadAudio() {
+        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";
+        String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";
+
+        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
+
+            // try to get title and artist from the media content provider
+            mAsyncQueryHandler.startQuery(0, null, uri,
+                    null,
+                    selection, null, sortOrder);
+
+        } else if (uri.getScheme().equals("file")) {
+            // check if this file is in the media database (clicking on a download
+            // in the download manager might follow this path
+            String path = uri.getPath();
+            Log.e("Path:", path);
+            mAsyncQueryHandler.startQuery(0, null, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    new String[]{
+                            MediaStore.Audio.Media.ALBUM_ID,
+                            MediaStore.Audio.Media.TITLE,
+                            MediaStore.Audio.Media.ARTIST,
+                            MediaStore.Audio.Media.ALBUM},
+                    MediaStore.Audio.Media.DATA + "=?", new String[]{path}, null);
+        }
+    }
+
     @SuppressLint("HandlerLeak")
     private void initAsyncLoadMusicFiles() {
         mAsyncQueryHandler = new AsyncQueryHandler(getContentResolver()) {
@@ -90,8 +138,11 @@ public class HomeActivity extends AppCompatActivity {
                         String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
                         String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
                         String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+                        String album_id = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media._ID));
                         String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
                         String length = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION));
+
+
                         String song_duration = "";
                         if (String.valueOf(length) != null) {
                             try {
@@ -135,50 +186,23 @@ public class HomeActivity extends AppCompatActivity {
         };
 
     }
+    private  String getCoverArtPath(long albumId, Context context) {
 
-    private void setAdapter() {
-        storage.storeAudio(audioList);
-        recyclerView.setVisibility(View.VISIBLE);
-        txNoAudioFound.setVisibility(View.GONE);
-        adapter = new AudioAdapter(this,audioList, new OnItemClickListener() {
-            @Override
-            public void onItemClick(AudioData item, int position) {
-                playAudioService(position);
-
-            }
-        });
-
-        RecyclerView.LayoutManager manager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(manager);
-        recyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
-        recyclerView.setAdapter(adapter);
-
-
-    }
-
-    private void loadAudio() {
-        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";
-        String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";
-
-        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
-
-            // try to get title and artist from the media content provider
-            mAsyncQueryHandler.startQuery(0, null, uri,
-                    null,
-                    selection, null, sortOrder);
-
-        } else if (uri.getScheme().equals("file")) {
-            // check if this file is in the media database (clicking on a download
-            // in the download manager might follow this path
-            String path = uri.getPath();
-            mAsyncQueryHandler.startQuery(0, null, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    new String[]{MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE,
-                            MediaStore.Audio.Media.ARTIST},
-                    MediaStore.Audio.Media.DATA + "=?", new String[]{path}, null);
+        Cursor albumCursor = context.getContentResolver().query(
+                MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                new String[]{MediaStore.Audio.Albums.ALBUM_ART},
+                MediaStore.Audio.Albums._ID + " = ?",
+                new String[]{Long.toString(albumId)},
+                null
+        );
+        boolean queryResult = albumCursor.moveToFirst();
+        String result = null;
+        if (queryResult) {
+            result = albumCursor.getString(0);
         }
+        albumCursor.close();
+        return result;
     }
-
     private void playAudioService(int audioIndex) {
         //Check is service is active
         if (!serviceBound) {
